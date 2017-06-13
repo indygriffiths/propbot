@@ -106,18 +106,18 @@ $json = json_decode($res->getBody());
 
 if(property_exists($json, "List") && !empty($json->List)) {
     foreach($json->List as $house) {
-        $lat = $house->GeographicLocation->Latitude;
-        $lon = $house->GeographicLocation->Longitude;
+        $lat = $house->GeographicLocation->Latitude ?? 0;
+        $lon = $house->GeographicLocation->Longitude ?? 0;
 
         $fields = [
             [
                 "title" => "Location",
-                "value" => $house->Address." <https://maps.google.com/maps?z=12&t=m&q=loc:".$lat."+".$lon."|(open in Google Maps)>",
+                "value" => $house->Address ?? "n/a"." <https://maps.google.com/maps?z=12&t=m&q=loc:".$lat."+".$lon."|(open in Google Maps)>",
                 "short" => true
             ],
             [
                 "title" => "Rent",
-                "value" => $house->PriceDisplay,
+                "value" => $house->PriceDisplay ?? "n/a",
                 "short" => true
             ],
             [
@@ -151,6 +151,6 @@ if(property_exists($json, "List") && !empty($json->List)) {
             "title_link" => "https://trademe.co.nz/".$house->ListingId,
             "image_url"  => $house->PictureHref,
             'fields'     => $fields
-        ])->send($house->Title.", Available ".$house->AvailableFrom);
+        ])->send($house->Title.", Available ".$house->AvailableFrom ?? "unknown");
     }
 }
