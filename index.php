@@ -151,6 +151,6 @@ if(property_exists($json, "List") && !empty($json->List)) {
             "title_link" => "https://trademe.co.nz/".$house->ListingId,
             "image_url"  => $house->PictureHref,
             'fields'     => $fields
-        ])->send("A new rental property has been listed on Trade Me");
+        ])->send($house->Title.", Available ".$house->AvailableFrom);
     }
 }
