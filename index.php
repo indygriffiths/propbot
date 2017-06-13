@@ -122,22 +122,22 @@ if(property_exists($json, "List") && !empty($json->List)) {
             ],
             [
                 "title" => "Available From",
-                "value" => $house->AvailableFrom,
+                "value" => $house->AvailableFrom ?? "n/a",
                 "short" => true
             ],
             [
                 "title" => "Furnishings",
-                "value" => $house->Whiteware,
+                "value" => $house->Whiteware ?? "n/a",
                 "short" => true
             ],
             [
                 "title" => "Bedrooms",
-                "value" => $house->Bedrooms,
+                "value" => $house->Bedrooms ?? "n/a",
                 "short" => true
             ],
             [
                 "title" => "Bathrooms",
-                "value" => $house->Bathrooms,
+                "value" => $house->Bathrooms ?? "n/a",
                 "short" => true
             ]
         ];
