@@ -1,23 +1,23 @@
-#Slack Flat Finder Bot
+# Slack Flat Finder Bot
 
 * Uses the Trade Me API to grab new rental properties that have been recently listed
 * Checks if fibre and VDSL are available by querying Chorus
 * Includes travel times to various locations
 
-We run this as a cron job every six hours, and include the travel times to our offices. I wrote it late one night so I don't give a damn if its messy, ok?
+We run this as a cron job every six hours, and include the travel times to our offices. I wrote it late one night so I don't really care if it's too messy.
 
-##Requirements
-* PHP 5.5 (probably), 5.6 (probably), 7.0 (definitely)
+## Requirements
+* PHP 7.0 
 * Trade Me API Key [(register an application)](https://www.trademe.co.nz/MyTradeMe/Api/RegisterNewApplication.aspx)
 * Google Distance Matrix API Key [(get a key)](https://developers.google.com/maps/documentation/distance-matrix/start#get-a-key)
 
-##Installation
+## Installation
 * Update composer
 * Update config.php
 * Create a cron job for whatever interval in hours you want to get new notifications, and set that interval for `$settings['new_properties_since']`
 
 
-##Configuration
+## Configuration
 ```
 $settings = [
     'new_properties_since' => '<1-24>',
