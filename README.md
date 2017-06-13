@@ -6,6 +6,8 @@
 
 We run this as a cron job every six hours, and include the travel times to our offices. I wrote it late one night so I don't really care if it's too messy.
 
+![so pretty](http://i.imgur.com/nQe1RgQ.png "so pretty, lack of fibre is a bummer though")
+
 ## Requirements
 * PHP 7.0 
 * Trade Me API Key [(register an application)](https://www.trademe.co.nz/MyTradeMe/Api/RegisterNewApplication.aspx)
