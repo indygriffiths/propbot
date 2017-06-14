@@ -15,8 +15,9 @@ We run this as a cron job every six hours, and include the travel times to our o
 
 ## Installation
 * Update composer
-* Update config.php
-* Create a cron job for whatever interval in hours you want to get new notifications, and set that interval for `$settings['new_properties_since']`
+* Update config.php with the values below
+* Create a cron job to run index.php for whatever interval you want to get new notifications, for example every twelve hours
+* Set that interval as a relative `strtotime` value in `$settings['new_properties_since']`, for example `now -12 hours`
 
 
 ## Configuration
