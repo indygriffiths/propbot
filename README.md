@@ -20,9 +20,11 @@ We run this as a cron job every six hours, and include the travel times to our o
 
 
 ## Configuration
+Example: Getting new properties every six hours
+
 ```
 $settings = [
-    'new_properties_since' => '<1-24>',
+    'new_properties_since' => 'now -6 hours',
     'slack' => [
         'webhook_url' => '<slack webhook url>',
         'username' => '<webhook username>',
