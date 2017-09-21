@@ -91,6 +91,49 @@ function getBroadbandSpeeds(&$fields, $lat, $lon) {
     }
 }
 
+function getElevation(&$fields, $lat, $lon) {
+    global $settings;
+
+    if(empty($settings["google"]["key"]) || !$settings["google"]["elevation"]["enabled"]) return false;
+
+    $url = "https://maps.googleapis.com/maps/api/elevation/json?locations=".$lat.",".$lon."&key=".$settings["google"]["key"];
+
+    $guzzle = new GuzzleHttp\Client();
+    $res = $guzzle->request('GET', $url);
+
+    $json = json_decode($res->getBody());
+
+    $fieldReturn = [
+        "title" => "Elevation",
+        "value" => "Unknown",
+        "short" => true
+    ];
+
+    $returnVal = true;
+
+    if(isset($json->results[0])) {
+        $place = $json->results[0];
+        $val = number_format($place->elevation, 0);
+
+        $fieldReturn["value"] = $val." meters";
+
+        if($val <= $settings["google"]["elevation"]["threshold"]) {
+            $diff = number_format(abs($val - $settings["google"]["elevation"]["threshold"]), 0);
+            
+            $returnVal = [
+                'text'     => '*:rotating_light: This property is below your elevation threshold by '.$diff.' meters. Check your local tsunami risk zone map :rotating_light:*',
+                'fallback' => 'Elevation is below specified threshold',
+                'color'    => 'danger',
+                'mrkdwn_in' => ['text']
+            ];
+        }
+
+        $fields = array_merge($fields, [$fieldReturn]);
+    }
+
+    return $returnVal;
+}
+
 $fromDate = rawurlencode(date("Y-m-d\TH:00", strtotime($settings["new_properties_since"])));
 
 // Get all recent properties from the Trade Me API
@@ -108,7 +151,7 @@ if(property_exists($json, "List") && !empty($json->List)) {
     foreach($json->List as $house) {
         $lat = $house->GeographicLocation->Latitude ?? 0;
         $lon = $house->GeographicLocation->Longitude ?? 0;
-
+        
         $fields = [
             [
                 "title" => "Location",
@@ -144,13 +187,23 @@ if(property_exists($json, "List") && !empty($json->List)) {
 
         getBroadbandSpeeds($fields, $lat, $lon);
         getTravelToWorkDistances($fields, $lat, $lon);
+        
+        $message = $client->createMessage();
 
-        $client->to($settings["slack"]["channel"])->attach([
+        $elevation = getElevation($fields, $lat, $lon);
+
+        $message->to($settings["slack"]["channel"])->attach(new Maknz\Slack\Attachment([
             "fallback"   => $house->Title,
             "title"      => $house->Title,
             "title_link" => "https://trademe.co.nz/".$house->ListingId,
             "image_url"  => $house->PictureHref,
-            'fields'     => $fields
-        ])->send($house->Title.", Available ".$house->AvailableFrom ?? "unknown");
+            "fields"     => $fields
+        ]));
+
+        if(is_array($elevation)) {
+            $message->attach(new Maknz\Slack\Attachment($elevation));
+        }
+
+        $message->setText($house->Title.", Available ".$house->AvailableFrom ?? "unknown")->send();
     }
 }

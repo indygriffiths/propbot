@@ -26,6 +26,10 @@ $settings = [
         'transport' => '<walking|driving|bicycling|transit>',
         'addresses' => [
             '<name>' => '<address>',
+        ],
+        'elevation' => [
+            'enabled'     => true,
+            'threshold'   => <elevation in meters>
         ]
     ]
 ];
