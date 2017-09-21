@@ -3,8 +3,11 @@
 * Uses the Trade Me API to grab new rental properties that have been recently listed
 * Checks if fibre and VDSL are available by querying Chorus
 * Includes travel times to various locations
+* Alerts you if the elevation of the property is below a certain threshold
 
-We run this as a cron job every six hours, and include the travel times to our offices. I wrote it late one night so I don't really care if it's too messy.
+We run this as a cron job every hour, and include the travel times to our offices. I wrote it late one night so I don't really care if it's too messy.
+
+The bot can also get the elevation of the property, and depending on a certain threshold warn you if the property is potentially within a tsunami risk zone (e.g up a hill or by the sea). You should always consult your local tsunami risk zone maps for more information before making any assumptions based on the elevation.
 
 ![so pretty](http://i.imgur.com/nQe1RgQ.png "so pretty, lack of fibre is a bummer though")
 
@@ -21,11 +24,11 @@ We run this as a cron job every six hours, and include the travel times to our o
 
 
 ## Configuration
-Example: Getting new properties every six hours
+Example: Getting new properties every hour
 
 ```
 $settings = [
-    'new_properties_since' => 'now -6 hours',
+    'new_properties_since' => 'now -1 hour',
     'slack' => [
         'webhook_url' => '<slack webhook url>',
         'username' => '<webhook username>',
@@ -42,6 +45,10 @@ $settings = [
         'transport' => '<walking|driving|bicycling|transit>',
         'addresses' => [
             '<name>' => '<address>',
+        ],
+        'elevation' => [
+            'enabled'     => true,
+            'threshold'   => <elevation in meters>
         ]
     ]
 ];
