@@ -134,7 +134,7 @@ function getElevation(&$fields, $lat, $lon) {
     return $returnVal;
 }
 
-$fromDate = rawurlencode(date("Y-m-d\TH:00", strtotime($settings["new_properties_since"])));
+$fromDate = rawurlencode(date("Y-m-d\TH:i:s", strtotime($settings["new_properties_since"])));
 
 // Get all recent properties from the Trade Me API
 $url = 'https://api.trademe.co.nz/v1/Search/Property/Rental.json?date_from='.$fromDate.'&'.http_build_query($settings["trademe"]["search"]);
