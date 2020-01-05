@@ -1,71 +1,130 @@
-# Slack Flat Finder Bot
+# Slack Property Finder Bot
 
-* Uses the Trade Me API to grab new rental properties that have been recently listed
-* Checks if fibre and VDSL are available by querying Chorus
-* Includes travel times to various locations
-* Alerts you if the elevation of the property is below a certain threshold
+A handy bot to alert you whenever there is a new Trade Me residential or rental listed that matches your specifications. Designed to be run periodically as a cron job,
 
-We run this as a cron job every hour, and include the travel times to our offices. I wrote it late one night so I don't really care if it's too messy.
-
-The bot can also get the elevation of the property, and depending on a certain threshold warn you if the property is potentially within a tsunami risk zone (e.g up a hill or by the sea). You should always consult your local tsunami risk zone maps for more information before making any assumptions based on the elevation.
+* Uses the Trade Me API to grab new rental or residential properties that have been recently listed.
+* Checks if fibre and VDSL are available by querying Chorus.
+* Includes travel times to various locations if set.
 
 ![so pretty](http://i.imgur.com/nQe1RgQ.png "so pretty, lack of fibre is a bummer though")
 
+**This program is not endorsed by Trade Me or Chorus in any shape or form**
+
 ## Requirements
-* PHP 7.0 
+* PHP 7.1+ with the `json` extension enabled
 * Trade Me API Key [(register an application)](https://www.trademe.co.nz/MyTradeMe/Api/RegisterNewApplication.aspx)
 * Google Distance Matrix API Key [(get a key)](https://developers.google.com/maps/documentation/distance-matrix/start#get-a-key)
 
-## Installation
-* Update composer
-* Update config.php with the values below
-* Create a cron job to run index.php for whatever interval you want to get new notifications, for example every twelve hours
-* Set that interval as a relative `strtotime` value in `$settings['new_properties_since']`, for example `now -12 hours`
-
-
 ## Configuration
-Example: Getting new properties every hour
 
-```
-$settings = [
-    'new_properties_since' => 'now -1 hour',
-    'slack' => [
-        'webhook_url' => '<slack webhook url>',
-        'username' => '<webhook username>',
-        'channel' => '<channel>',
-        'link_names' => true
-    ],
-    'trademe' => [
-        'consumer_key' => '<trade me consumer key',
-        'consumer_secret' => '<trade me consumer secret>>',
-        'search' => <see example config>
-    ],
-    'google' => [
-        'key' => '<google api key for distance matrix>',
-        'transport' => '<walking|driving|bicycling|transit>',
-        'addresses' => [
-            '<name>' => '<address>',
-        ],
-        'elevation' => [
-            'enabled'     => true,
-            'threshold'   => <elevation in meters>
-        ]
-    ]
-];
+By default the configuration variables are loaded from environment variables, or they can be loaded from a file located in `$HOME/.propbot/config`.
 
+If you want to use a different directory for loading the config file, specify the `--config-dir` option with a full path to the folder to use.
+
+### Travel times
+
+The bot can use the Google Maps Distance Matrix API to work out the rough travel time to certain addresses. Google requires you to enable Billing on the API project that your API tokens refer to.
+
+Addresses can be defined in the `GOOGLE_ADDRESSES` environment variable. The variable is a JSON array with a `name` and `address` property.
+
+```bash
+GOOGLE_ADDRESSES="[{\"name\": \"Work\", \"address\": \"123 Fake Street, Wellington 6011, New Zealand\"}]"
 ```
 
-Example config for Trade Me rental listings in Wellington City, with 3-4 bedrooms and a maximum rent per week of $630
+### Environment variables
+
+```bash
+TRADEME_CONSUMER_KEY=""
+TRADEME_CONSUMER_SECRET=""
+
+SLACK_WEBHOOK_URL=""
+SLACK_WEBHOOK_USERNAME="Property Finder"
+SLACK_WEBHOOK_CHANNEL="#houses"
+
+# Used for working out travel times to certain addresses
+GOOGLE_KEY=""
+GOOGLE_ADDRESSES=""
+GOOGLE_TRANSPORT_METHOD="transit"
+GOOGLE_DISTANCE_UNIT="metric"
 ```
-[
-    'photo_size'       => 'Large',
-    'bedrooms_min'     => '3',
-    'bedrooms_max'     => '4',
-    'district'         => '47',
-    'price_max'        => '630',
-    'property_type'    => 'House,Townhouse,Apartment',
-    'return_metadata'  => 'false',
-    'sort_order'       => 'Default'
-]
+
+## Installation
+* `composer install`
+* `bin/propbot`
+
+## Usage
+
+* On first run of a command any listings within the last hour are fetched. Subsequent runs of the command will fetch properties listed since the last run time.
+* Use `--help` to list all available arguments as these are used for filtering the listings fetched from Trade Me.
+
+Post _any_ recent rental property listings in New Zealand to Slack:
+
+```bash
+bin/propbot find:rentals
 ```
-Reference: [http://developer.trademe.co.nz/api-reference/search-methods/rental-search/](http://developer.trademe.co.nz/api-reference/search-methods/rental-search/)
+
+Post recent rental property listings to Slack with 2-5 bedrooms that allow pets:
+
+```bash
+bin/propbot find:rentals --pets-ok true --bedrooms-min 2 --bedrooms-max 5
+```
+
+Post recent property listings up to $500k in the greater Wellington region to Slack:
+
+```bash
+bin/propbot find:properties --region 15 --price-max 500000
+```
+
+## Localities / Districts / Suburbs
+
+The Trade Me API uses numeric IDs for representing localities, districts, and suburbs. These can be fetched from the following endpoint:
+
+```
+https://api.trademe.co.nz/v1/Localities.json
+```
+
+For example:
+ * Wellington at the locality (region level) has a LocalityID of 15.  (use `--region`)
+ * Upper Hutt within that locality has a DistrictID of 45.  (use `--district`)
+ * Clouston Park within that district has a SuburbID of 3067. (use `--suburb`)
+ 
+Given that showing all properties for a locality can be quite broad, you can comma-separate IDs when filtering results to only search within those locations.
+
+For example, if I only want to see places for Heretaunga and Clouston Park within Upper Hutt, I can use this to only search those suburbs:
+
+```bash
+bin/propbot find:rentals --suburb 3067,925
+```
+
+If you want to look up what the IDs is you can use the `lookup:locations` command to search for locations. For example, if I wanted some Dunedin suburbs:
+
+```bash
+bin/propbot lookup:locations --name "Dunedin" --name "Andersons Bay" --name "Tainui" --name "Waverley" --name "Brockville" --name "Caversham" --name "Shiel Hill" --name "Concord" --name "Forbury" --name "Kew" --name "Maori Hill" --name "Maryhill"
+
+Fetching Trade Me localities
++--------------------------------------+-------------+-------------+-----------+
+| Location                             | Locality ID | District ID | Suburb ID |
++--------------------------------------+-------------+-------------+-----------+
+| Otago / Dunedin                      |             | 71          |           |
+| Taranaki / South Taranaki / Waverley |             |             | 1034      |
+| Otago / Dunedin / Andersons Bay      |             |             | 3031      |
+| Otago / Dunedin / Brockville         |             |             | 2013      |
+| Otago / Dunedin / Caversham          |             |             | 1809      |
+| Otago / Dunedin / Concord            |             |             | 2378      |
+| Otago / Dunedin / Forbury            |             |             | 3535      |
+| Otago / Dunedin / Kew                |             |             | 1832      |
+| Otago / Dunedin / Maori Hill         |             |             | 1942      |
+| Otago / Dunedin / Maryhill           |             |             | 1906      |
+| Otago / Dunedin / Shiel Hill         |             |             | 1747      |
+| Otago / Dunedin / Tainui             |             |             | 1418      |
+| Otago / Dunedin / Waverley           |             |             | 3028      |
+| Southland / Invercargill / Kew       |             |             | 2080      |
+| Southland / Invercargill / Waverley  |             |             | 3475      |
+| Southland / Southland / Waverley     |             |             | 3138      |
++--------------------------------------+-------------+-------------+-----------+
+
+To use these in your find:* commands, use the following arguments:
+   --district "71" --suburb "1034,3031,2013,1809,2378,3535,1832,1942,1906,1747,1418,3028,2080,3475,3138"
+```
+
+Even though the list includes results from Southland and Taranaki, the results will still be limited to Dunedin as I've searched for `Dunedin` which has returned the Dunedin district ID.

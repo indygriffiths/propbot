@@ -1,0 +1,69 @@
+#!/usr/bin/env php
+<?php
+
+use HaydenPierce\ClassFinder\ClassFinder;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\ConsoleEvents;
+use Symfony\Component\Console\Event\ConsoleCommandEvent;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Dotenv\Dotenv;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+
+date_default_timezone_set('Pacific/Auckland');
+
+$paths = [
+    __DIR__.'/../autoload.php',
+    __DIR__.'/../vendor/autoload.php',
+    __DIR__.'/../../vendor/autoload.php',
+    __DIR__.'/../../../vendor/autoload.php',
+    __DIR__.'/../../../../vendor/autoload.php',
+];
+
+$included = false;
+foreach ($paths as $path) {
+    if (file_exists($path)) {
+        require_once $path;
+        $included = true;
+        break;
+    }
+}
+
+if (!$included) {
+    throw new RuntimeException('Autoload failed. Do you need to run composer install?');
+}
+
+$application = new Application('Propbot');
+$application->getDefinition()->addOption(new InputOption(
+    'config-dir',
+    'c',
+    InputOption::VALUE_OPTIONAL,
+    'Path to the config directory',
+    sprintf('%s/.propbot', $_SERVER['HOME']),
+));
+
+// Create a custom event dispatcher to autoload the config file before a command is run
+$dispatcher = new EventDispatcher();
+$dispatcher->addListener(ConsoleEvents::COMMAND, function (ConsoleCommandEvent $event) {
+    $input = $event->getInput();
+    $configLocation = sprintf('%s/config', $input->getOption('config-dir'));
+
+    if (file_exists($configLocation)) {
+        $event->getOutput()->writeln(sprintf('Loading config file %s', $configLocation), OutputInterface::VERBOSITY_DEBUG);
+        $dotenv = new Dotenv();
+        $dotenv->load($configLocation);
+    }
+});
+$application->setDispatcher($dispatcher);
+
+// Autoload commands within the commands namespace
+$commands = ClassFinder::getClassesInNamespace('Propbot\\Command', ClassFinder::RECURSIVE_MODE);
+foreach ($commands as $command) {
+    if (stripos($command, 'Base') !== false) {
+        continue;
+    }
+
+    $application->add(new $command());
+}
+
+$application->run();
