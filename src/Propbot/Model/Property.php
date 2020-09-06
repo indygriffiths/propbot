@@ -44,6 +44,11 @@ class Property
         return $this->result->Suburb ?? '';
     }
 
+    public function getDistrict()
+    {
+        return $this->result->District ?? '';
+    }
+
     public function getLatitude()
     {
         return $this->result->GeographicLocation->Latitude ?? 0;
